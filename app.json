@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "temp-scaffold",
-    "slug": "temp-scaffold",
+    "name": "consciousness-trigger",
+    "slug": "consciousness-trigger",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,18 +13,38 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.consciousnesstrigger.app",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a905b94d-fd1a-4e3e-89fc-e6c97fa75482"
+      }
+    },
+    "owner": "vishalchhadekar",
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }
