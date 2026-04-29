@@ -33,6 +33,10 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Firebase credentials — never commit these
+# google-services.json is safe to commit (client-side config only)
+*-adminsdk-*.json
+
 # typescript
 *.tsbuildinfo
 

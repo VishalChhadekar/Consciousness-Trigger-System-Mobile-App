@@ -65,6 +65,10 @@ export function NameScreen({ navigation }: ScreenProps<'Name'>) {
           <Text style={styles.btnText}>Continue</Text>
         )}
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.existingRow} onPress={() => navigation.navigate('ExistingUser')}>
+        <Text style={styles.existingText}>I already have an account</Text>
+      </TouchableOpacity>
     </Screen>
   );
 }
@@ -92,4 +96,6 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.35 },
   btnText: { color: C.text, fontSize: 16, fontWeight: '500' },
+  existingRow: { alignItems: 'center', paddingVertical: 8 },
+  existingText: { color: C.textMuted, fontSize: 14 },
 });

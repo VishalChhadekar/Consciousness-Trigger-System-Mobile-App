@@ -105,6 +105,12 @@ export const api = {
   }) =>
     request('/api/user-context', { method: 'POST', body: JSON.stringify(payload) }),
 
+  registerDeviceToken: (userId: string, token: string) =>
+    request('/api/device-token', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, token, platform: 'expo' }),
+    }),
+
   generateNotification: (userId: string, timeOfDay?: string) =>
     request<Notification>('/api/generate-notification', {
       method: 'POST',

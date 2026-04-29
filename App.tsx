@@ -9,12 +9,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 
 import { navigationRef } from './navigation/navigationRef';
-import { useNotifications } from './hooks/useNotifications';
+import { useNotifications, ensurePushTokenRegistered } from './hooks/useNotifications';
 import { Storage } from './services/storage';
 import { C } from './constants/colors';
 
 // Onboarding
 import { NameScreen } from './screens/onboarding/NameScreen';
+import { ExistingUserScreen } from './screens/onboarding/ExistingUserScreen';
 import { IdentityQuestionsScreen } from './screens/onboarding/IdentityQuestionsScreen';
 import { LifeContextScreen } from './screens/onboarding/LifeContextScreen';
 import { PermissionsScreen } from './screens/onboarding/PermissionsScreen';
@@ -47,10 +48,14 @@ export default function App() {
       // and onboarding_complete was never written.
       const done = onboarded === 'true' || Boolean(userId);
       if (done && onboarded !== 'true') {
-        // Repair the missing flag so future launches don't hit this branch again.
         await Storage.setOnboarded();
       }
       setInitialRoute(done ? 'Home' : 'Name');
+      // Re-register push token on every cold start for existing users.
+      // Covers restore-account flow and token rotation after reinstalls.
+      if (done && userId) {
+        ensurePushTokenRegistered(userId).catch(() => null);
+      }
     }
     resolveRoute();
   }, []);
@@ -59,6 +64,7 @@ export default function App() {
   // getLastNotificationResponseAsync is native-only — safe to skip on web.
   async function onNavReady() {
     try {
+      // eslint-disable-next-line deprecation/deprecation
       const response = await Notifications.getLastNotificationResponseAsync();
       if (!response) return;
       const data = response.notification.request.content.data as Record<string, string>;
@@ -92,6 +98,7 @@ export default function App() {
         >
           {/* Onboarding */}
           <Stack.Screen name="Name" component={NameScreen} />
+          <Stack.Screen name="ExistingUser" component={ExistingUserScreen} />
           <Stack.Screen name="IdentityQuestions" component={IdentityQuestionsScreen} />
           <Stack.Screen name="LifeContext" component={LifeContextScreen} />
           <Stack.Screen name="Permissions" component={PermissionsScreen} />

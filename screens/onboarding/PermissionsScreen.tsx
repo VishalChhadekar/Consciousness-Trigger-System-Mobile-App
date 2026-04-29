@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { C } from '../../constants/colors';
-import { registerForPushNotifications } from '../../hooks/useNotifications';
-import { registerBackgroundTask } from '../../tasks/backgroundFetch';
+import { ensurePushTokenRegistered } from '../../hooks/useNotifications';
 import { api, getTimeOfDay } from '../../services/api';
 import { Storage } from '../../services/storage';
 import type { ScreenProps } from '../../navigation/types';
@@ -20,28 +19,14 @@ export function PermissionsScreen({ navigation, route }: ScreenProps<'Permission
     // Each step is independent — a failure in one must not block navigation to Home.
     // onboarding_complete is already set by LifeContextScreen.
 
-    // 1. Push permission + token (native only, no-op on web)
+    // 1. Push permission + send token to backend (FCM via Expo push service)
     try {
-      const token = await registerForPushNotifications();
-      if (token) {
-        fetch(`${require('../../constants/api').API_BASE}/api/push-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, token, platform: 'expo' }),
-        }).catch(() => null);
-      }
+      await ensurePushTokenRegistered(userId);
     } catch (e) {
       console.warn('[Permissions] Push token step failed (non-fatal):', e);
     }
 
-    // 2. Background task (native only, no-op on web)
-    try {
-      await registerBackgroundTask();
-    } catch (e) {
-      console.warn('[Permissions] Background task registration failed (non-fatal):', e);
-    }
-
-    // 3. Generate first trigger — the welcome moment
+    // 2. Generate first trigger — the welcome moment
     try {
       const notification = await api.generateNotification(userId, getTimeOfDay());
       await Storage.saveLastNotification(notification.id, notification.content, notification.type);

@@ -26,6 +26,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.consciousnesstrigger.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -44,7 +45,15 @@
     },
     "owner": "vishalchhadekar",
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#1a1a2e",
+          "defaultChannel": "default"
+        }
+      ]
     ]
   }
 }

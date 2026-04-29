@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "340109219664",
+    "project_id": "consciousness-trigger",
+    "storage_bucket": "consciousness-trigger.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:340109219664:android:f8d937fb3957322f413e55",
+        "android_client_info": {
+          "package_name": "com.consciousnesstrigger.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXlDm68HHQVk6ivzKYXH4mTv5cnYer8b8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

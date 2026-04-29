@@ -5,6 +5,7 @@ import Constants from 'expo-constants';
 import { type EventSubscription } from 'expo-modules-core';
 import { Platform, Alert } from 'react-native';
 import { navigationRef } from '../navigation/navigationRef';
+import { api } from '../services/api';
 
 // Expo Go SDK 53+ removed Android remote push support.
 // Local notification scheduling still works; push tokens do not.
@@ -110,4 +111,20 @@ export async function registerForPushNotifications(): Promise<string | null> {
   const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
   console.log('[Push] Token:', data);
   return data;
+}
+
+// Call this once after the user is known (onboarding complete or restore account).
+// Idempotent — the backend upserts the token so calling it multiple times is safe.
+export async function ensurePushTokenRegistered(userId: string): Promise<void> {
+  if (IS_EXPO_GO || !Device.isDevice || Platform.OS === 'web') return;
+  try {
+    const token = await registerForPushNotifications();
+    if (token) {
+      await api.registerDeviceToken(userId, token);
+      console.log('[Push] Token registered with backend.');
+    }
+  } catch (e) {
+    // Non-fatal — will retry on next app launch.
+    console.warn('[Push] ensurePushTokenRegistered failed (non-fatal):', e);
+  }
 }
