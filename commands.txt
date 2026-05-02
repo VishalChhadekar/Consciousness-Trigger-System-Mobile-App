@@ -1,0 +1,37 @@
+1. To run the mobile as Web: npx expo start --web
+
+
+
+
+
+
+
+
+
+
+
+I can't read from the physical device's console directly. But there's a simpler path — the token gets saved to Supabase automatically when the app opens. Here's the quickest way to get it and test end-to-end:
+
+Step 1 — Install the latest APK and open the app
+
+The build at e3d52ada already has all the token registration code. Just open the app — it registers the token silently on launch.
+
+Step 2 — Query Supabase to get the token
+
+Run this in your Supabase SQL editor:
+
+
+SELECT user_id, token, updated_at FROM device_tokens ORDER BY updated_at DESC LIMIT 5;
+You should see a row with a token starting with ExponentPushToken[.
+
+Step 3 — Send a manual test push without waiting for cron
+
+Go to expo.dev/notifications, paste the token, and send a test message. If it arrives on the phone, the entire pipeline (FCM → Expo → device) is confirmed working.
+
+Or test the backend endpoint directly with curl / Postman:
+
+
+curl -X POST https://consciousness-trigger-system.vercel.app/api/cron/send-notifications \
+  -H "Authorization: Bearer <your-CRON_SECRET>"
+That triggers the cron manually — if device_tokens has a row, you'll get a real push within seconds.
+

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { type EventSubscription } from 'expo-modules-core';
 import { Platform, Alert } from 'react-native';
 import { navigationRef } from '../navigation/navigationRef';
@@ -9,7 +9,7 @@ import { api } from '../services/api';
 
 // Expo Go SDK 53+ removed Android remote push support.
 // Local notification scheduling still works; push tokens do not.
-const IS_EXPO_GO = Constants.appOwnership === 'expo';
+const IS_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 if (!IS_EXPO_GO) {
   // Only safe to call at module level in a real build.
@@ -105,8 +105,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ??
-    Constants.easConfig?.projectId ??
-    'your-project-id'; // run `eas init` to populate
+    Constants.easConfig?.projectId;
+
+  if (!projectId) {
+    console.error('[Push] Missing projectId in app.json extra.eas.projectId');
+    return null;
+  }
 
   const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
   console.log('[Push] Token:', data);
