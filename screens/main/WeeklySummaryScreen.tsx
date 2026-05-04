@@ -47,11 +47,13 @@ export function WeeklySummaryScreen({ navigation }: ScreenProps<'WeeklySummary'>
 
   return (
     <Screen scroll contentStyle={styles.container}>
-      <TouchableOpacity style={styles.backRow} onPress={() => navigation.goBack()}>
-        <Text style={styles.backText}>← Back</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.heading}>This week</Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={8}>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.heading}>This Week</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
       {loading ? (
         <ActivityIndicator color={C.textMuted} style={styles.loader} />
@@ -72,10 +74,15 @@ export function WeeklySummaryScreen({ navigation }: ScreenProps<'WeeklySummary'>
 }
 
 const styles = StyleSheet.create({
-  container: { paddingTop: 48, gap: 24 },
-  backRow: { marginBottom: 8 },
+  container: { paddingTop: 56, gap: 24 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   backText: { color: C.textMuted, fontSize: 15 },
-  heading: { color: C.text, fontSize: 26, fontWeight: '600' },
+  heading: { color: C.text, fontSize: 17, fontWeight: '600', letterSpacing: 0.3 },
+  headerSpacer: { width: 60 },
   loader: { marginTop: 40 },
   summaryCard: {
     backgroundColor: C.surface,

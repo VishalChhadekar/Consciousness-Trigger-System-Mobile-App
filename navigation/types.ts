@@ -11,6 +11,7 @@ export type RootStackParamList = {
   Home: undefined;
   Response: { notificationId: string; content: string; notificationType: string };
   WeeklySummary: undefined;
+  NotificationHistory: undefined;
 };
 
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<

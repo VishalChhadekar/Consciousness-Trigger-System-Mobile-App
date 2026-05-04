@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
-import { DomainBadge } from '../../components/DomainBadge';
-import { C } from '../../constants/colors';
+import { DomainBadge, parseDomain } from '../../components/DomainBadge';
+import { C, DOMAIN_COLORS } from '../../constants/colors';
 import { api, ApiError, getTimeOfDay } from '../../services/api';
 import { Storage } from '../../services/storage';
 import type { ScreenProps } from '../../navigation/types';
@@ -18,14 +18,21 @@ const FALLBACK_CONTENT = 'Right now… chosen or autopilot?';
 
 type LocalNotification = { id: string; content: string; type: string };
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return 'Good night';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  if (hour < 21) return 'Good evening';
+  return 'Good night';
+}
+
 export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
   const [notification, setNotification] = useState<LocalNotification | null>(null);
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
 
-  // Reload last notification every time the screen comes into focus
-  // (so it refreshes after returning from Response screen)
   useFocusEffect(
     useCallback(() => {
       async function load() {
@@ -51,8 +58,11 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
     setLoading(true);
     try {
       const notif = await api.generateNotification(userId, getTimeOfDay());
-      await Storage.saveLastNotification(notif.id, notif.content, notif.type);
-      await Storage.recordGenerate();
+      await Promise.all([
+        Storage.saveLastNotification(notif.id, notif.content, notif.type),
+        Storage.recordGenerate(),
+        Storage.addNotificationToHistory(notif.id, notif.content, notif.type),
+      ]);
       setNotification({ id: notif.id, content: notif.content, type: notif.type });
     } catch (e) {
       if (e instanceof ApiError) {
@@ -65,34 +75,45 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
           return;
         }
       }
-      // silent — don't surface generic errors on home
     } finally {
       setLoading(false);
     }
   }
 
   const hasNotification = notification !== null;
-  const ts = notification
-    ? '' // could format notification.created_at if stored; omitted for simplicity
-    : '';
+  const greeting = getGreeting();
+
+  // Derive the domain accent color for the card's left border
+  const domain = notification?.type ? parseDomain(notification.type) : '';
+  const accentColor = domain ? (DOMAIN_COLORS[domain] ?? C.border) : C.border;
 
   return (
     <Screen contentStyle={styles.container}>
+      {/* Greeting */}
+      <Text style={styles.greeting}>{greeting}</Text>
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.appTitle}>Consciousness Trigger</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('WeeklySummary')}>
-          <Text style={styles.summaryLink}>Weekly</Text>
-        </TouchableOpacity>
+        <View style={styles.headerLinks}>
+          <TouchableOpacity onPress={() => navigation.navigate('NotificationHistory')}>
+            <Text style={styles.headerLink}>History</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerLinkDivider}>·</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('WeeklySummary')}>
+            <Text style={styles.headerLink}>Weekly</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Notification card */}
-      <View style={styles.card}>
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* Trigger card — left border color reflects the domain */}
+      <View style={[styles.card, { borderLeftColor: accentColor }]}>
         {hasNotification ? (
           <>
-            {notification.type ? (
-              <DomainBadge type={notification.type} />
-            ) : null}
+            {notification.type ? <DomainBadge type={notification.type} /> : null}
             <Text style={styles.content}>{notification.content}</Text>
           </>
         ) : (
@@ -142,44 +163,62 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingTop: 56, gap: 24 },
+  container: { paddingTop: 56, gap: 0 },
+  greeting: {
+    color: C.textDim,
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.4,
+    marginBottom: 6,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  appTitle: { color: C.text, fontSize: 17, fontWeight: '600', letterSpacing: 0.5 },
-  summaryLink: { color: C.textMuted, fontSize: 14 },
+  appTitle: { color: C.text, fontSize: 17, fontWeight: '600', letterSpacing: 0.4 },
+  headerLinks: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  headerLink: { color: C.textMuted, fontSize: 14 },
+  headerLinkDivider: { color: C.textDim, fontSize: 14 },
+  divider: {
+    height: 1,
+    backgroundColor: C.border,
+    marginBottom: 24,
+  },
   card: {
     flex: 1,
     backgroundColor: C.surface,
     borderRadius: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: C.border,
     padding: 24,
     gap: 14,
     justifyContent: 'center',
-    maxHeight: 260,
+    maxHeight: 280,
+    marginBottom: 24,
   },
   content: {
     color: C.text,
-    fontSize: 20,
-    lineHeight: 30,
+    fontSize: 22,
+    lineHeight: 34,
     fontWeight: '400',
     letterSpacing: 0.2,
   },
   empty: {
     color: C.textDim,
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 26,
     textAlign: 'center',
   },
   actions: { gap: 12, paddingBottom: 8 },
   respondBtn: {
     backgroundColor: C.primary,
     borderRadius: 10,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
   },
-  respondText: { color: C.text, fontSize: 16, fontWeight: '500' },
+  respondText: { color: '#fff', fontSize: 16, fontWeight: '600', letterSpacing: 0.3 },
   generateBtn: {
     backgroundColor: C.surface,
     borderWidth: 1,

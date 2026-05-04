@@ -2,6 +2,14 @@ import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+export type NotificationRecord = {
+  id: string;
+  content: string;
+  type: string;
+  timestamp: number;
+  responded: boolean;
+};
+
 // expo-secure-store is native-only. On web (browser testing) fall back to
 // AsyncStorage which uses localStorage under the hood.
 const secure = {
@@ -80,5 +88,35 @@ export const Storage = {
       AsyncStorage.setItem(dateKey, (count + 1).toString()),
       AsyncStorage.setItem('last_generate_ts', Date.now().toString()),
     ]);
+  },
+
+  // ── Notification history (last 30 records, newest first)
+  getNotificationHistory: async (): Promise<NotificationRecord[]> => {
+    const raw = await AsyncStorage.getItem('notification_history');
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw) as NotificationRecord[];
+    } catch {
+      return [];
+    }
+  },
+
+  addNotificationToHistory: async (id: string, content: string, type: string): Promise<void> => {
+    if (!id) return;
+    const raw = await AsyncStorage.getItem('notification_history');
+    const history: NotificationRecord[] = raw ? JSON.parse(raw) : [];
+    if (history.some((h) => h.id === id)) return; // deduplicate
+    const record: NotificationRecord = { id, content, type, timestamp: Date.now(), responded: false };
+    const updated = [record, ...history].slice(0, 30);
+    await AsyncStorage.setItem('notification_history', JSON.stringify(updated));
+  },
+
+  markNotificationResponded: async (id: string): Promise<void> => {
+    if (!id) return;
+    const raw = await AsyncStorage.getItem('notification_history');
+    if (!raw) return;
+    const history: NotificationRecord[] = JSON.parse(raw);
+    const updated = history.map((h) => (h.id === id ? { ...h, responded: true } : h));
+    await AsyncStorage.setItem('notification_history', JSON.stringify(updated));
   },
 };

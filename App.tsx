@@ -24,6 +24,7 @@ import { PermissionsScreen } from './screens/onboarding/PermissionsScreen';
 import { HomeScreen } from './screens/main/HomeScreen';
 import { ResponseScreen } from './screens/main/ResponseScreen';
 import { WeeklySummaryScreen } from './screens/main/WeeklySummaryScreen';
+import { NotificationHistoryScreen } from './screens/main/NotificationHistoryScreen';
 
 import type { RootStackParamList } from './navigation/types';
 
@@ -111,6 +112,7 @@ export default function App() {
             options={{ animation: 'slide_from_bottom' }}
           />
           <Stack.Screen name="WeeklySummary" component={WeeklySummaryScreen} />
+          <Stack.Screen name="NotificationHistory" component={NotificationHistoryScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

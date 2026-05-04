@@ -6,6 +6,7 @@ import { type EventSubscription } from 'expo-modules-core';
 import { Platform, Alert } from 'react-native';
 import { navigationRef } from '../navigation/navigationRef';
 import { api } from '../services/api';
+import { Storage } from '../services/storage';
 
 // Expo Go SDK 53+ removed Android remote push support.
 // Local notification scheduling still works; push tokens do not.
@@ -48,7 +49,16 @@ export function useNotifications() {
     }
 
     receivedSub.current = Notifications.addNotificationReceivedListener((notification) => {
-      const body = notification.request.content.body ?? '';
+      const data = notification.request.content.data as Record<string, string>;
+      const body = notification.request.content.body ?? data?.content ?? '';
+      // Track in history so foreground-received notifications are never lost
+      if (data?.notification_id) {
+        Storage.addNotificationToHistory(
+          data.notification_id,
+          data.content ?? body,
+          data.type ?? ''
+        ).catch(() => null);
+      }
       if (body) Alert.alert('', body);
     });
 
