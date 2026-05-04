@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
-import { DomainBadge, parseDomain } from '../../components/DomainBadge';
-import { C, DOMAIN_COLORS } from '../../constants/colors';
+import { DomainBadge } from '../../components/DomainBadge';
+import { C } from '../../constants/colors';
 import { api, ApiError, getTimeOfDay } from '../../services/api';
 import { Storage } from '../../services/storage';
 import type { ScreenProps } from '../../navigation/types';
@@ -81,43 +81,43 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
   }
 
   const hasNotification = notification !== null;
-  const greeting = getGreeting();
-
-  // Derive the domain accent color for the card's left border
-  const domain = notification?.type ? parseDomain(notification.type) : '';
-  const accentColor = domain ? (DOMAIN_COLORS[domain] ?? C.border) : C.border;
 
   return (
     <Screen contentStyle={styles.container}>
-      {/* Greeting */}
-      <Text style={styles.greeting}>{greeting}</Text>
-
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.appTitle}>Consciousness Trigger</Text>
+        <View>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.appTitle}>Consciousness Trigger</Text>
+        </View>
         <View style={styles.headerLinks}>
-          <TouchableOpacity onPress={() => navigation.navigate('NotificationHistory')}>
-            <Text style={styles.headerLink}>History</Text>
+          <TouchableOpacity
+            style={styles.navPill}
+            onPress={() => navigation.navigate('NotificationHistory')}
+          >
+            <Text style={styles.navPillText}>History</Text>
           </TouchableOpacity>
-          <Text style={styles.headerLinkDivider}>·</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('WeeklySummary')}>
-            <Text style={styles.headerLink}>Weekly</Text>
+          <TouchableOpacity
+            style={styles.navPill}
+            onPress={() => navigation.navigate('WeeklySummary')}
+          >
+            <Text style={styles.navPillText}>Weekly</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Trigger card — left border color reflects the domain */}
-      <View style={[styles.card, { borderLeftColor: accentColor }]}>
+      {/* Trigger card */}
+      <View style={styles.card}>
         {hasNotification ? (
           <>
             {notification.type ? <DomainBadge type={notification.type} /> : null}
             <Text style={styles.content}>{notification.content}</Text>
           </>
         ) : (
-          <Text style={styles.empty}>No trigger yet.{'\n'}Tap below to generate one.</Text>
+          <View style={styles.emptyInner}>
+            <Text style={styles.emptyTitle}>No trigger yet.</Text>
+            <Text style={styles.emptySubtitle}>Tap below to generate one.</Text>
+          </View>
         )}
       </View>
 
@@ -164,70 +164,82 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
 
 const styles = StyleSheet.create({
   container: { paddingTop: 56, gap: 0 },
-  greeting: {
-    color: C.textDim,
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.4,
-    marginBottom: 6,
-  },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 28,
   },
-  appTitle: { color: C.text, fontSize: 17, fontWeight: '600', letterSpacing: 0.4 },
-  headerLinks: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  headerLink: { color: C.textMuted, fontSize: 14 },
-  headerLinkDivider: { color: C.textDim, fontSize: 14 },
-  divider: {
-    height: 1,
-    backgroundColor: C.border,
-    marginBottom: 24,
+  greeting: {
+    color: C.textMuted,
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+    marginBottom: 4,
   },
+  appTitle: {
+    color: C.text,
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  headerLinks: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  navPill: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 50,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  navPillText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
+
   card: {
     flex: 1,
     backgroundColor: C.surface,
-    borderRadius: 14,
-    borderLeftWidth: 3,
-    borderLeftColor: C.border,
-    padding: 24,
-    gap: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 28,
+    gap: 16,
     justifyContent: 'center',
-    maxHeight: 280,
+    maxHeight: 300,
     marginBottom: 24,
   },
   content: {
     color: C.text,
     fontSize: 22,
     lineHeight: 34,
-    fontWeight: '400',
+    fontWeight: '500',
     letterSpacing: 0.2,
   },
-  empty: {
-    color: C.textDim,
-    fontSize: 16,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
+  emptyInner: { gap: 6, alignItems: 'center' },
+  emptyTitle: { color: C.textMuted, fontSize: 16, fontWeight: '600' },
+  emptySubtitle: { color: C.textDim, fontSize: 14 },
+
   actions: { gap: 12, paddingBottom: 8 },
   respondBtn: {
     backgroundColor: C.primary,
-    borderRadius: 10,
-    paddingVertical: 15,
+    borderRadius: 50,
+    paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  respondText: { color: '#fff', fontSize: 16, fontWeight: '600', letterSpacing: 0.3 },
+  respondText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
   generateBtn: {
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 10,
-    paddingVertical: 14,
+    borderRadius: 50,
+    paddingVertical: 15,
     alignItems: 'center',
   },
-  generateText: { color: C.textMuted, fontSize: 15 },
+  generateText: { color: C.textMuted, fontSize: 15, fontWeight: '500' },
   btnDisabled: { opacity: 0.4 },
   rateLimitMsg: {
     color: C.textDim,

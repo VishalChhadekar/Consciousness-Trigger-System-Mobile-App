@@ -8,14 +8,14 @@ export const DOMAIN_COLORS: Record<string, string> = {
 };
 
 export const C = {
-  bg: '#0f0f13',
-  surface: '#1c1c23',
-  surfaceHigh: '#24242e',
-  border: '#2e2e3a',
-  text: '#ededf2',
-  textMuted: '#72728a',
-  textDim: '#44445a',
-  primary: '#8b7cf8',
+  bg: '#0b1629',
+  surface: '#162038',
+  surfaceHigh: '#1e2d47',
+  border: '#263352',
+  text: '#ffffff',
+  textMuted: '#7a90bb',
+  textDim: '#3d5275',
+  primary: '#3d7dff',
   danger: '#e05454',
   success: '#2ecc71',
 };

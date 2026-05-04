@@ -11,8 +11,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DomainBadge, parseDomain } from '../../components/DomainBadge';
-import { C, DOMAIN_COLORS } from '../../constants/colors';
+import { DomainBadge } from '../../components/DomainBadge';
+import { C } from '../../constants/colors';
 import { api, ApiError } from '../../services/api';
 import { Storage } from '../../services/storage';
 import type { ScreenProps } from '../../navigation/types';
@@ -23,7 +23,6 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  // Save to history on mount — covers push notifications and background-fetch taps
   useEffect(() => {
     if (notificationId) {
       Storage.addNotificationToHistory(notificationId, content, notificationType).catch(() => null);
@@ -42,15 +41,12 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
       await Storage.markNotificationResponded(notificationId);
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
-        // fall through
+        // silent dismiss
       }
     } finally {
       navigation.goBack();
     }
   }
-
-  const domain = notificationType ? parseDomain(notificationType) : '';
-  const accentColor = domain ? (DOMAIN_COLORS[domain] ?? C.border) : C.border;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -58,7 +54,6 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
         style={styles.kav}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Scrollable content so cursor is never hidden behind the keyboard */}
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
@@ -66,19 +61,23 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          <TouchableOpacity style={styles.closeRow} onPress={() => navigation.goBack()}>
-            <Text style={styles.closeText}>Skip</Text>
-          </TouchableOpacity>
+          {/* Header row */}
+          <View style={styles.headerRow}>
+            <Text style={styles.screenTitle}>Your Reflection</Text>
+            <TouchableOpacity style={styles.skipBtn} onPress={() => navigation.goBack()}>
+              <Text style={styles.skipText}>Skip</Text>
+            </TouchableOpacity>
+          </View>
 
-          {/* Trigger card — elevated surface + domain left border */}
-          <View style={[styles.card, { borderLeftColor: accentColor }]}>
+          {/* Trigger card — elevated surface */}
+          <View style={styles.card}>
             {notificationType ? <DomainBadge type={notificationType} /> : null}
             <Text style={styles.triggerText}>{content}</Text>
           </View>
 
-          {/* Response input area */}
+          {/* Response input */}
           <View style={styles.inputArea}>
-            <Text style={styles.inputLabel}>Your reflection</Text>
+            <Text style={styles.inputLabel}>Write your response</Text>
             <TextInput
               style={styles.input}
               placeholder="A few honest words…"
@@ -88,14 +87,13 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
               multiline
               textAlignVertical="top"
               autoFocus
-              // Scroll to end as content grows so cursor stays visible
               onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
             />
             <Text style={styles.inputHint}>1–3 sentences is plenty</Text>
           </View>
         </ScrollView>
 
-        {/* Submit pinned above keyboard — outside ScrollView */}
+        {/* Pinned submit button */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={[styles.submitBtn, (!responseText.trim() || loading) && styles.btnDisabled]}
@@ -119,42 +117,63 @@ const styles = StyleSheet.create({
   kav: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 48,
+    paddingTop: 24,
     paddingBottom: 16,
     gap: 24,
   },
-  closeRow: { alignItems: 'flex-end' },
-  closeText: { color: C.textMuted, fontSize: 15 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  screenTitle: {
+    color: C.text,
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  skipBtn: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 50,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
+  skipText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
   card: {
     backgroundColor: C.surfaceHigh,
-    borderRadius: 14,
-    borderLeftWidth: 3,
-    padding: 22,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 24,
     gap: 14,
   },
   triggerText: {
     color: C.text,
     fontSize: 20,
     lineHeight: 32,
-    fontWeight: '400',
+    fontWeight: '500',
     letterSpacing: 0.2,
   },
   inputArea: { gap: 10 },
   inputLabel: {
-    color: C.textDim,
-    fontSize: 11,
-    letterSpacing: 1.4,
+    color: C.textMuted,
+    fontSize: 12,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     fontWeight: '600',
   },
   input: {
     backgroundColor: C.surface,
-    borderRadius: 10,
-    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 18,
     color: C.text,
     fontSize: 16,
-    lineHeight: 24,
-    minHeight: 130,
+    lineHeight: 26,
+    minHeight: 140,
   },
   inputHint: { color: C.textDim, fontSize: 12 },
   footer: {
@@ -164,10 +183,15 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     backgroundColor: C.primary,
-    borderRadius: 10,
-    paddingVertical: 15,
+    borderRadius: 50,
+    paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  btnDisabled: { opacity: 0.35 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '600', letterSpacing: 0.3 },
+  btnDisabled: { opacity: 0.35, shadowOpacity: 0 },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
 });

@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
-import { DomainBadge, parseDomain } from '../../components/DomainBadge';
-import { C, DOMAIN_COLORS } from '../../constants/colors';
+import { DomainBadge } from '../../components/DomainBadge';
+import { C } from '../../constants/colors';
 import { Storage, type NotificationRecord } from '../../services/storage';
 import type { ScreenProps } from '../../navigation/types';
 
@@ -65,8 +65,9 @@ export function NotificationHistoryScreen({ navigation }: ScreenProps<'Notificat
 
   return (
     <Screen contentStyle={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={8}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Triggers</Text>
@@ -93,24 +94,24 @@ export function NotificationHistoryScreen({ navigation }: ScreenProps<'Notificat
 
             const { record } = item;
             const pending = !record.responded && Boolean(record.id);
-            const domain = record.type ? parseDomain(record.type) : '';
-            const accentColor = domain ? (DOMAIN_COLORS[domain] ?? C.border) : C.border;
 
             return (
               <TouchableOpacity
-                style={[styles.card, { borderLeftColor: accentColor }, !pending && styles.cardDimmed]}
+                style={[styles.card, !pending && styles.cardDimmed]}
                 onPress={() => handleItemPress(record)}
                 disabled={!pending}
-                activeOpacity={pending ? 0.7 : 1}
+                activeOpacity={pending ? 0.75 : 1}
               >
                 <View style={styles.cardHeader}>
                   {record.type ? <DomainBadge type={record.type} /> : <View />}
                   <Text style={styles.timeText}>{formatTime(record.timestamp)}</Text>
                 </View>
-                <Text style={[styles.contentText, !pending && styles.contentDimmed]} numberOfLines={4}>
+
+                <Text style={styles.contentText} numberOfLines={4}>
                   {record.content}
                 </Text>
-                <View style={[styles.statusBadge, record.responded ? styles.statusDone : styles.statusPending]}>
+
+                <View style={[styles.statusPill, record.responded ? styles.statusDone : styles.statusPending]}>
                   <Text style={[styles.statusText, record.responded ? styles.statusDoneText : styles.statusPendingText]}>
                     {record.responded ? '✓  Responded' : 'Tap to respond'}
                   </Text>
@@ -132,9 +133,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 28,
   },
-  backText: { color: C.textMuted, fontSize: 15 },
-  title: { color: C.text, fontSize: 17, fontWeight: '600', letterSpacing: 0.3 },
-  headerSpacer: { width: 60 },
+  backBtn: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 50,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  backText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
+  title: { color: C.text, fontSize: 18, fontWeight: '700', letterSpacing: 0.3 },
+  headerSpacer: { width: 72 },
   listContent: { paddingBottom: 40 },
   sectionLabel: {
     color: C.textDim,
@@ -142,19 +151,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    marginBottom: 10,
+    marginBottom: 12,
     marginTop: 4,
   },
   card: {
     backgroundColor: C.surface,
-    borderRadius: 14,
-    borderLeftWidth: 3,
-    padding: 18,
-    gap: 12,
-    marginBottom: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 20,
+    gap: 14,
+    marginBottom: 12,
   },
-  // Responded cards recede visually so pending ones naturally stand out
-  cardDimmed: { opacity: 0.5 },
+  cardDimmed: { opacity: 0.45 },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -164,19 +173,18 @@ const styles = StyleSheet.create({
   contentText: {
     color: C.text,
     fontSize: 15,
-    lineHeight: 23,
+    lineHeight: 24,
     fontWeight: '400',
   },
-  contentDimmed: { color: C.textMuted },
-  statusBadge: {
+  statusPill: {
     alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    borderRadius: 50,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
   },
-  statusDone: { backgroundColor: 'rgba(46, 204, 113, 0.10)' },
-  statusPending: { backgroundColor: 'rgba(139, 124, 248, 0.12)' },
-  statusText: { fontSize: 12, fontWeight: '500' },
+  statusDone: { backgroundColor: 'rgba(46, 204, 113, 0.12)' },
+  statusPending: { backgroundColor: 'rgba(61, 125, 255, 0.12)' },
+  statusText: { fontSize: 12, fontWeight: '600' },
   statusDoneText: { color: C.success },
   statusPendingText: { color: C.primary },
   emptyState: {
@@ -185,6 +193,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  emptyTitle: { color: C.textMuted, fontSize: 16, fontWeight: '500' },
+  emptyTitle: { color: C.textMuted, fontSize: 16, fontWeight: '600' },
   emptySubtitle: { color: C.textDim, fontSize: 14, textAlign: 'center' },
 });

@@ -48,7 +48,7 @@ export function WeeklySummaryScreen({ navigation }: ScreenProps<'WeeklySummary'>
   return (
     <Screen scroll contentStyle={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={8}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.heading}>This Week</Text>
@@ -80,20 +80,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backText: { color: C.textMuted, fontSize: 15 },
-  heading: { color: C.text, fontSize: 17, fontWeight: '600', letterSpacing: 0.3 },
-  headerSpacer: { width: 60 },
+  backBtn: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 50,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  backText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
+  heading: { color: C.text, fontSize: 18, fontWeight: '700', letterSpacing: 0.3 },
+  headerSpacer: { width: 72 },
   loader: { marginTop: 40 },
   summaryCard: {
     backgroundColor: C.surface,
-    borderRadius: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
     padding: 24,
     gap: 20,
   },
   summaryText: {
     color: C.text,
     fontSize: 16,
-    lineHeight: 26,
+    lineHeight: 28,
   },
   cachedLabel: {
     color: C.textDim,
@@ -101,10 +111,12 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: C.surface,
-    borderRadius: 14,
-    padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 28,
     alignItems: 'center',
     marginTop: 16,
   },
-  emptyText: { color: C.textMuted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  emptyText: { color: C.textMuted, fontSize: 15, lineHeight: 24, textAlign: 'center' },
 });
