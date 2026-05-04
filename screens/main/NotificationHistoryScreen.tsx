@@ -65,7 +65,6 @@ export function NotificationHistoryScreen({ navigation }: ScreenProps<'Notificat
 
   return (
     <Screen contentStyle={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
           <Text style={styles.backText}>← Back</Text>
@@ -140,9 +139,14 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     paddingHorizontal: 14,
     paddingVertical: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
   backText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
-  title: { color: C.text, fontSize: 18, fontWeight: '700', letterSpacing: 0.3 },
+  title: { color: C.text, fontSize: 18, fontWeight: '700', letterSpacing: 0.2 },
   headerSpacer: { width: 72 },
   listContent: { paddingBottom: 40 },
   sectionLabel: {
@@ -162,6 +166,11 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 14,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
   cardDimmed: { opacity: 0.45 },
   cardHeader: {
@@ -182,8 +191,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 12,
   },
-  statusDone: { backgroundColor: 'rgba(46, 204, 113, 0.12)' },
-  statusPending: { backgroundColor: 'rgba(61, 125, 255, 0.12)' },
+  statusDone: { backgroundColor: 'rgba(22, 163, 74, 0.10)' },
+  statusPending: { backgroundColor: 'rgba(61, 125, 255, 0.10)' },
   statusText: { fontSize: 12, fontWeight: '600' },
   statusDoneText: { color: C.success },
   statusPendingText: { color: C.primary },

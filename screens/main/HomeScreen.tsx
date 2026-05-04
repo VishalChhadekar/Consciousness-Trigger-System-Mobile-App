@@ -144,7 +144,7 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={C.textMuted} />
+            <ActivityIndicator color={C.primary} />
           ) : (
             <Text style={styles.generateText}>
               {hasNotification ? 'Get Another' : 'Generate Trigger'}
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   greeting: {
-    color: C.textMuted,
+    color: C.textDim,
     fontSize: 13,
     fontWeight: '500',
     letterSpacing: 0.3,
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     color: C.text,
     fontSize: 20,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   headerLinks: { flexDirection: 'row', gap: 8, marginTop: 4 },
   navPill: {
@@ -192,6 +192,11 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     paddingHorizontal: 14,
     paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
   navPillText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
 
@@ -206,13 +211,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     maxHeight: 300,
     marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 3,
   },
   content: {
     color: C.text,
     fontSize: 22,
     lineHeight: 34,
     fontWeight: '500',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   emptyInner: { gap: 6, alignItems: 'center' },
   emptyTitle: { color: C.textMuted, fontSize: 16, fontWeight: '600' },
@@ -225,19 +235,24 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  respondText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
+  respondText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
   generateBtn: {
     backgroundColor: C.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: C.border,
     borderRadius: 50,
     paddingVertical: 15,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   generateText: { color: C.textMuted, fontSize: 15, fontWeight: '500' },
   btnDisabled: { opacity: 0.4 },

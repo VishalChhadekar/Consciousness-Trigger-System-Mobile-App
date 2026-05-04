@@ -99,6 +99,11 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     padding: 24,
     gap: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
   summaryText: {
     color: C.text,
@@ -117,6 +122,11 @@ const styles = StyleSheet.create({
     padding: 28,
     alignItems: 'center',
     marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
   emptyText: { color: C.textMuted, fontSize: 15, lineHeight: 24, textAlign: 'center' },
 });

@@ -69,7 +69,7 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
             </TouchableOpacity>
           </View>
 
-          {/* Trigger card — elevated surface */}
+          {/* Trigger card */}
           <View style={styles.card}>
             {notificationType ? <DomainBadge type={notificationType} /> : null}
             <Text style={styles.triggerText}>{content}</Text>
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     color: C.text,
     fontSize: 20,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   skipBtn: {
     backgroundColor: C.surface,
@@ -139,6 +139,11 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     paddingHorizontal: 16,
     paddingVertical: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
   skipText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
   card: {
@@ -148,13 +153,18 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     padding: 24,
     gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   triggerText: {
     color: C.text,
     fontSize: 20,
     lineHeight: 32,
     fontWeight: '500',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   inputArea: { gap: 10 },
   inputLabel: {
@@ -167,13 +177,18 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: C.surface,
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: C.border,
     padding: 18,
     color: C.text,
     fontSize: 16,
     lineHeight: 26,
     minHeight: 140,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   inputHint: { color: C.textDim, fontSize: 12 },
   footer: {
@@ -187,11 +202,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 6,
   },
   btnDisabled: { opacity: 0.35, shadowOpacity: 0 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
 });
