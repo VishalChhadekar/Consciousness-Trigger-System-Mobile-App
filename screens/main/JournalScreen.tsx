@@ -20,7 +20,7 @@ import type { ScreenProps } from '../../navigation/types';
 const RAW_THOUGHTS: JournalTemplate = {
   id: '',
   label: 'Raw Thoughts',
-  prompt: 'What's on your mind right now? No filter, no structure — just write.',
+  prompt: "What's on your mind right now? No filter, no structure — just write.",
 };
 
 function formatEntryTime(iso: string): string {
