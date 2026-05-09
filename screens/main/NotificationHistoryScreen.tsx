@@ -5,16 +5,18 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
 import { DomainBadge } from '../../components/DomainBadge';
 import { C } from '../../constants/colors';
-import { Storage, type NotificationRecord } from '../../services/storage';
+import { Storage } from '../../services/storage';
+import { api, type NotificationHistoryItem } from '../../services/api';
 import type { ScreenProps } from '../../navigation/types';
 
-function formatTime(ts: number): string {
-  const date = new Date(ts);
+function formatTime(iso: string): string {
+  const date = new Date(iso);
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
   const yesterday = new Date(now);
@@ -27,15 +29,53 @@ function formatTime(ts: number): string {
 }
 
 export function NotificationHistoryScreen({ navigation }: ScreenProps<'NotificationHistory'>) {
-  const [records, setRecords] = useState<NotificationRecord[]>([]);
+  const [records, setRecords] = useState<NotificationHistoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState('');
 
+  async function fetchHistory(uid?: string) {
+    const id = uid ?? userId;
+    if (!id) return;
+    setLoading(true);
+    try {
+      const data = await api.getNotificationHistory(id);
+      setRecords(data ?? []);
+      // Mirror responded status to local storage so other screens stay in sync
+      for (const item of data ?? []) {
+        if (item.responded) {
+          await Storage.markNotificationResponded(item.id).catch(() => null);
+        }
+      }
+    } catch {
+      // API unavailable — fall back to local storage
+      const local = await Storage.getNotificationHistory();
+      setRecords(
+        local.map((l) => ({
+          id: l.id,
+          content: l.content,
+          type: l.type,
+          created_at: new Date(l.timestamp).toISOString(),
+          responded: l.responded,
+        }))
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Auto-refresh every time the screen gains focus (covers returning from Response screen)
   useFocusEffect(
     useCallback(() => {
-      Storage.getNotificationHistory().then(setRecords);
+      Storage.getUserId().then((uid) => {
+        if (uid) {
+          setUserId(uid);
+          fetchHistory(uid);
+        }
+      });
     }, [])
   );
 
-  function handleItemPress(record: NotificationRecord) {
+  function handleItemPress(record: NotificationHistoryItem) {
     if (!record.responded && record.id) {
       navigation.navigate('Response', {
         notificationId: record.id,
@@ -46,12 +86,16 @@ export function NotificationHistoryScreen({ navigation }: ScreenProps<'Notificat
   }
 
   const today = new Date().toDateString();
-  const todayRecords = records.filter((r) => new Date(r.timestamp).toDateString() === today);
-  const olderRecords = records.filter((r) => new Date(r.timestamp).toDateString() !== today);
+  const todayRecords = records.filter(
+    (r) => new Date(r.created_at).toDateString() === today
+  );
+  const olderRecords = records.filter(
+    (r) => new Date(r.created_at).toDateString() !== today
+  );
 
   type Section =
     | { type: 'header'; label: string }
-    | { type: 'item'; record: NotificationRecord };
+    | { type: 'item'; record: NotificationHistoryItem };
 
   const sections: Section[] = [];
   if (todayRecords.length > 0) {
@@ -65,15 +109,27 @@ export function NotificationHistoryScreen({ navigation }: ScreenProps<'Notificat
 
   return (
     <Screen contentStyle={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Triggers</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          style={styles.refreshBtn}
+          onPress={() => fetchHistory()}
+          disabled={loading}
+          hitSlop={8}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={C.primary} />
+          ) : (
+            <Text style={styles.refreshIcon}>↻</Text>
+          )}
+        </TouchableOpacity>
       </View>
 
-      {sections.length === 0 ? (
+      {sections.length === 0 && !loading ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No triggers yet.</Text>
           <Text style={styles.emptySubtitle}>Head back home to generate your first one.</Text>
@@ -103,13 +159,11 @@ export function NotificationHistoryScreen({ navigation }: ScreenProps<'Notificat
               >
                 <View style={styles.cardHeader}>
                   {record.type ? <DomainBadge type={record.type} /> : <View />}
-                  <Text style={styles.timeText}>{formatTime(record.timestamp)}</Text>
+                  <Text style={styles.timeText}>{formatTime(record.created_at)}</Text>
                 </View>
-
                 <Text style={styles.contentText} numberOfLines={4}>
                   {record.content}
                 </Text>
-
                 <View style={[styles.statusPill, record.responded ? styles.statusDone : styles.statusPending]}>
                   <Text style={[styles.statusText, record.responded ? styles.statusDoneText : styles.statusPendingText]}>
                     {record.responded ? '✓  Responded' : 'Tap to respond'}
@@ -147,7 +201,22 @@ const styles = StyleSheet.create({
   },
   backText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
   title: { color: C.text, fontSize: 18, fontWeight: '700', letterSpacing: 0.2 },
-  headerSpacer: { width: 72 },
+  refreshBtn: {
+    width: 38,
+    height: 38,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  refreshIcon: { color: C.primary, fontSize: 18, fontWeight: '600' },
   listContent: { paddingBottom: 40 },
   sectionLabel: {
     color: C.textDim,
@@ -179,12 +248,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   timeText: { color: C.textDim, fontSize: 12 },
-  contentText: {
-    color: C.text,
-    fontSize: 15,
-    lineHeight: 24,
-    fontWeight: '400',
-  },
+  contentText: { color: C.text, fontSize: 15, lineHeight: 24 },
   statusPill: {
     alignSelf: 'flex-start',
     borderRadius: 50,
@@ -196,12 +260,7 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, fontWeight: '600' },
   statusDoneText: { color: C.success },
   statusPendingText: { color: C.primary },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyTitle: { color: C.textMuted, fontSize: 16, fontWeight: '600' },
   emptySubtitle: { color: C.textDim, fontSize: 14, textAlign: 'center' },
 });

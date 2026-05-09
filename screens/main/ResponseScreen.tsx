@@ -17,36 +17,73 @@ import { api, ApiError } from '../../services/api';
 import { Storage } from '../../services/storage';
 import type { ScreenProps } from '../../navigation/types';
 
+type Phase = 'writing' | 'submitting' | 'submitted' | 'followup-loading' | 'followup-done';
+
 export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
   const { notificationId, content, notificationType } = route.params;
   const [responseText, setResponseText] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submittedText, setSubmittedText] = useState('');
+  const [followUpText, setFollowUpText] = useState('');
+  const [phase, setPhase] = useState<Phase>('writing');
+  const [toast, setToast] = useState('');
+  const [userId, setUserId] = useState('');
   const scrollRef = useRef<ScrollView>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    Storage.getUserId().then((uid) => { if (uid) setUserId(uid); });
     if (notificationId) {
       Storage.addNotificationToHistory(notificationId, content, notificationType).catch(() => null);
     }
+    return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
   }, []);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(''), 3500);
+  }
 
   async function handleSubmit() {
     const text = responseText.trim();
     if (!text) return;
-    setLoading(true);
+    setPhase('submitting');
     try {
-      const userId = await Storage.getUserId();
-      if (userId) {
-        await api.sendResponse(userId, notificationId, text);
-      }
+      if (userId) await api.sendResponse(userId, notificationId, text);
       await Storage.markNotificationResponded(notificationId);
+      setSubmittedText(text);
+      setPhase('submitted');
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
-        // silent dismiss
+        // notification not found — still show submitted state
+        setSubmittedText(text);
+        setPhase('submitted');
+      } else {
+        setPhase('writing');
       }
-    } finally {
-      navigation.goBack();
     }
   }
+
+  async function handleFollowUp() {
+    if (!userId) return;
+    setPhase('followup-loading');
+    try {
+      const res = await api.generateFollowUp(userId, notificationId);
+      setFollowUpText(res.follow_up);
+      setPhase('followup-done');
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch (e) {
+      setPhase('submitted');
+      if (e instanceof ApiError && e.status === 503) {
+        showToast('Follow-up unavailable right now.');
+      }
+    }
+  }
+
+  const isWriting = phase === 'writing';
+  const isSubmitting = phase === 'submitting';
+  const isDone = phase === 'submitted' || phase === 'followup-loading' || phase === 'followup-done';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -61,52 +98,108 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* Header row */}
+          {/* Header */}
           <View style={styles.headerRow}>
             <Text style={styles.screenTitle}>Your Reflection</Text>
-            <TouchableOpacity style={styles.skipBtn} onPress={() => navigation.goBack()}>
-              <Text style={styles.skipText}>Skip</Text>
-            </TouchableOpacity>
+            {isDone ? (
+              <TouchableOpacity style={styles.skipBtn} onPress={() => navigation.goBack()}>
+                <Text style={styles.skipText}>Done</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.skipBtn} onPress={() => navigation.goBack()} disabled={isSubmitting}>
+                <Text style={[styles.skipText, isSubmitting && { opacity: 0.4 }]}>Skip</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Trigger card */}
-          <View style={styles.card}>
+          <View style={styles.triggerCard}>
             {notificationType ? <DomainBadge type={notificationType} /> : null}
             <Text style={styles.triggerText}>{content}</Text>
           </View>
 
-          {/* Response input */}
-          <View style={styles.inputArea}>
-            <Text style={styles.inputLabel}>Write your response</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="A few honest words…"
-              placeholderTextColor={C.textDim}
-              value={responseText}
-              onChangeText={setResponseText}
-              multiline
-              textAlignVertical="top"
-              autoFocus
-              onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-            />
-            <Text style={styles.inputHint}>1–3 sentences is plenty</Text>
-          </View>
+          {/* Writing phase: input */}
+          {isWriting || isSubmitting ? (
+            <View style={styles.inputArea}>
+              <Text style={styles.inputLabel}>Write your response</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="A few honest words…"
+                placeholderTextColor={C.textDim}
+                value={responseText}
+                onChangeText={setResponseText}
+                multiline
+                textAlignVertical="top"
+                autoFocus={isWriting}
+                editable={isWriting}
+                onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+              />
+              <Text style={styles.inputHint}>1–3 sentences is plenty</Text>
+            </View>
+          ) : null}
+
+          {/* Submitted / follow-up phase: show submitted text */}
+          {isDone ? (
+            <View style={styles.submittedCard}>
+              <Text style={styles.submittedLabel}>Your response</Text>
+              <Text style={styles.submittedText}>{submittedText}</Text>
+            </View>
+          ) : null}
+
+          {/* Follow-up insight card */}
+          {phase === 'followup-done' && followUpText ? (
+            <View style={styles.insightCard}>
+              <Text style={styles.insightText}>{followUpText}</Text>
+            </View>
+          ) : null}
+
+          {/* "Get deeper insight" button — shown only in submitted state */}
+          {phase === 'submitted' ? (
+            <TouchableOpacity style={styles.insightBtn} onPress={handleFollowUp}>
+              <Text style={styles.insightBtnText}>✦  Get deeper insight</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {/* Follow-up loading indicator */}
+          {phase === 'followup-loading' ? (
+            <View style={styles.followUpLoading}>
+              <ActivityIndicator color={C.primary} />
+              <Text style={styles.followUpLoadingText}>Generating insight…</Text>
+            </View>
+          ) : null}
+
+          {/* Toast */}
+          {toast ? (
+            <View style={styles.toast}>
+              <Text style={styles.toastText}>{toast}</Text>
+            </View>
+          ) : null}
         </ScrollView>
 
-        {/* Pinned submit button */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.submitBtn, (!responseText.trim() || loading) && styles.btnDisabled]}
-            onPress={handleSubmit}
-            disabled={!responseText.trim() || loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitText}>Submit</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        {/* Pinned footer — Submit while writing, Done while in submitted flow */}
+        {isWriting || isSubmitting ? (
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.submitBtn, (!responseText.trim() || isSubmitting) && styles.btnDisabled]}
+              onPress={handleSubmit}
+              disabled={!responseText.trim() || isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitText}>Submit</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {phase === 'followup-done' ? (
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.goBack()}>
+              <Text style={styles.doneBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -115,23 +208,10 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   kav: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-    gap: 24,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  screenTitle: {
-    color: C.text,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24, gap: 20 },
+
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  screenTitle: { color: C.text, fontSize: 20, fontWeight: '700', letterSpacing: 0.2 },
   skipBtn: {
     backgroundColor: C.surface,
     borderWidth: 1,
@@ -146,34 +226,24 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   skipText: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
-  card: {
+
+  triggerCard: {
     backgroundColor: C.surfaceHigh,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: C.border,
-    padding: 24,
-    gap: 14,
+    padding: 22,
+    gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
-  triggerText: {
-    color: C.text,
-    fontSize: 20,
-    lineHeight: 32,
-    fontWeight: '500',
-    letterSpacing: 0.1,
-  },
+  triggerText: { color: C.text, fontSize: 19, lineHeight: 30, fontWeight: '500' },
+
   inputArea: { gap: 10 },
-  inputLabel: {
-    color: C.textMuted,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    fontWeight: '600',
-  },
+  inputLabel: { color: C.textMuted, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: '600' },
   input: {
     backgroundColor: C.surface,
     borderRadius: 16,
@@ -184,18 +254,65 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 26,
     minHeight: 140,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
     elevation: 1,
   },
   inputHint: { color: C.textDim, fontSize: 12 },
-  footer: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 12,
+
+  submittedCard: {
+    backgroundColor: C.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 18,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
+  submittedLabel: { color: C.textDim, fontSize: 11, fontWeight: '600', letterSpacing: 1.2, textTransform: 'uppercase' },
+  submittedText: { color: C.text, fontSize: 16, lineHeight: 26 },
+
+  insightBtn: {
+    backgroundColor: C.surfaceHigh,
+    borderWidth: 1.5,
+    borderColor: C.primary + '55',
+    borderRadius: 50,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  insightBtnText: { color: C.primary, fontSize: 15, fontWeight: '600', letterSpacing: 0.2 },
+
+  followUpLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  followUpLoadingText: { color: C.textMuted, fontSize: 14 },
+
+  insightCard: {
+    backgroundColor: C.surfaceHigh,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderColor: C.border,
+    borderLeftColor: C.primary,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  insightText: { color: C.text, fontSize: 16, lineHeight: 26, fontStyle: 'italic' },
+
+  toast: {
+    backgroundColor: C.text,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignSelf: 'center',
+  },
+  toastText: { color: C.bg, fontSize: 13, fontWeight: '500' },
+
+  footer: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12 },
   submitBtn: {
     backgroundColor: C.primary,
     borderRadius: 50,
@@ -209,4 +326,14 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.35, shadowOpacity: 0 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+
+  doneBtn: {
+    backgroundColor: C.surface,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    borderRadius: 50,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  doneBtnText: { color: C.text, fontSize: 16, fontWeight: '600' },
 });

@@ -12,7 +12,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const method = options?.method ?? 'GET';
   const body = options?.body;
 
-  // ── Request log
   console.log(`\n[API] ▶ ${method} ${url}`);
   if (body) {
     try {
@@ -29,7 +28,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       ...options,
     });
   } catch (networkErr: any) {
-    // Network-level failure (no connection, wrong IP, server down)
     console.error(`[API] ✖ NETWORK ERROR on ${method} ${url}`);
     console.error('[API]   Cause:', networkErr?.message ?? networkErr);
     throw new ApiError(`Network error: ${networkErr?.message ?? 'unreachable'}`, 0);
@@ -38,12 +36,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let json: any;
   try {
     json = await res.json();
-  } catch (parseErr) {
+  } catch {
     console.error(`[API] ✖ Could not parse JSON from ${url} (status ${res.status})`);
     throw new ApiError('Invalid JSON response from server', res.status);
   }
 
-  // ── Response log
   console.log(`[API] ◀ ${res.status} ${url}`);
   console.log('[API]   Response:', JSON.stringify(json, null, 2));
 
@@ -66,6 +63,39 @@ export type Notification = {
   content: string;
   type: string;
   created_at: string;
+};
+
+export type NotificationHistoryItem = {
+  id: string;
+  content: string;
+  type: string;
+  created_at: string;
+  responded: boolean;
+};
+
+export type JournalTemplate = {
+  id: string;
+  label: string;
+  prompt: string;
+};
+
+export type JournalEntry = {
+  id: string;
+  user_id: string;
+  content: string;
+  template_id: string | null;
+  date: string;
+  created_at: string;
+};
+
+export type UserStats = {
+  current_streak: number;
+  longest_streak: number;
+  total_responses: number;
+  total_notifications: number;
+  response_rate: number;
+  journal_entries: number;
+  badges: Array<{ id: string; label: string; desc: string }>;
 };
 
 export type WeeklySummaryResponse = {
@@ -127,6 +157,39 @@ export const api = {
       }),
     }),
 
+  // History — returns server-side list with responded status
+  getNotificationHistory: (userId: string) =>
+    request<NotificationHistoryItem[]>(`/api/notifications?user_id=${userId}`),
+
+  // Journal
+  getJournalTemplates: (userId: string) =>
+    request<JournalTemplate[]>(`/api/journal?user_id=${userId}&templates=true`),
+
+  saveJournalEntry: (userId: string, content: string, templateId?: string, date?: string) =>
+    request('/api/journal', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        content,
+        ...(templateId ? { template_id: templateId } : {}),
+        ...(date ? { date } : {}),
+      }),
+    }),
+
+  getJournalEntries: (userId: string, date: string) =>
+    request<JournalEntry[]>(`/api/journal?user_id=${userId}&date=${date}`),
+
+  // Stats & streaks
+  getUserStats: (userId: string) =>
+    request<UserStats>(`/api/stats?user_id=${userId}`),
+
+  // AI follow-up
+  generateFollowUp: (userId: string, notificationId: string) =>
+    request<{ follow_up: string }>('/api/generate-follow-up', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, notification_id: notificationId }),
+    }),
+
   getWeeklySummary: async (userId: string): Promise<WeeklySummaryResponse> => {
     const url = `${API_BASE}/api/weekly-summary?user_id=${userId}`;
     console.log(`\n[API] ▶ GET ${url}`);
@@ -146,4 +209,8 @@ export function getTimeOfDay(): 'morning' | 'afternoon' | 'evening' {
   if (h < 12) return 'morning';
   if (h < 17) return 'afternoon';
   return 'evening';
+}
+
+export function todayISO(): string {
+  return new Date().toISOString().split('T')[0];
 }

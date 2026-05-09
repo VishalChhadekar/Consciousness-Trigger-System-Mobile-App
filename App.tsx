@@ -25,6 +25,8 @@ import { HomeScreen } from './screens/main/HomeScreen';
 import { ResponseScreen } from './screens/main/ResponseScreen';
 import { WeeklySummaryScreen } from './screens/main/WeeklySummaryScreen';
 import { NotificationHistoryScreen } from './screens/main/NotificationHistoryScreen';
+import { JournalScreen } from './screens/main/JournalScreen';
+import { StatsScreen } from './screens/main/StatsScreen';
 
 import type { RootStackParamList } from './navigation/types';
 
@@ -114,6 +116,8 @@ export default function App() {
           />
           <Stack.Screen name="WeeklySummary" component={WeeklySummaryScreen} />
           <Stack.Screen name="NotificationHistory" component={NotificationHistoryScreen} />
+          <Stack.Screen name="Journal" component={JournalScreen} />
+          <Stack.Screen name="Stats" component={StatsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

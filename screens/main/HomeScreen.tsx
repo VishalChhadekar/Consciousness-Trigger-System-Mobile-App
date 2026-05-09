@@ -32,6 +32,7 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
+  const [streak, setStreak] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -40,7 +41,13 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
           Storage.getUserId(),
           Storage.getLastNotification(),
         ]);
-        if (uid) setUserId(uid);
+        if (uid) {
+          setUserId(uid);
+          // Load streak silently — non-blocking, non-fatal
+          api.getUserStats(uid)
+            .then((s) => setStreak(s.current_streak))
+            .catch(() => null);
+        }
         if (stored) setNotification(stored);
       }
       load();
@@ -90,20 +97,37 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
           <Text style={styles.greeting}>{getGreeting()}</Text>
           <Text style={styles.appTitle}>Consciousness Trigger</Text>
         </View>
-        <View style={styles.headerLinks}>
-          <TouchableOpacity
-            style={styles.navPill}
-            onPress={() => navigation.navigate('NotificationHistory')}
-          >
-            <Text style={styles.navPillText}>History</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.navPill}
-            onPress={() => navigation.navigate('WeeklySummary')}
-          >
-            <Text style={styles.navPillText}>Weekly</Text>
-          </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {/* Streak chip — taps into Stats */}
+          {streak !== null && streak > 0 ? (
+            <TouchableOpacity
+              style={styles.streakChip}
+              onPress={() => navigation.navigate('Stats')}
+            >
+              <Text style={styles.streakText}>🔥 {streak}</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.streakChipEmpty}
+              onPress={() => navigation.navigate('Stats')}
+            >
+              <Text style={styles.streakTextEmpty}>Stats</Text>
+            </TouchableOpacity>
+          )}
         </View>
+      </View>
+
+      {/* Nav pills row */}
+      <View style={styles.navRow}>
+        <TouchableOpacity style={styles.navPill} onPress={() => navigation.navigate('Journal')}>
+          <Text style={styles.navPillText}>Journal</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navPill} onPress={() => navigation.navigate('NotificationHistory')}>
+          <Text style={styles.navPillText}>History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navPill} onPress={() => navigation.navigate('WeeklySummary')}>
+          <Text style={styles.navPillText}>Weekly</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Trigger card */}
@@ -169,22 +193,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 28,
+    marginBottom: 16,
   },
-  greeting: {
-    color: C.textDim,
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.3,
-    marginBottom: 4,
+  greeting: { color: C.textDim, fontSize: 13, fontWeight: '500', letterSpacing: 0.3, marginBottom: 4 },
+  appTitle: { color: C.text, fontSize: 20, fontWeight: '700', letterSpacing: 0.2 },
+
+  headerRight: { marginTop: 4 },
+  streakChip: {
+    backgroundColor: '#FFF3E0',
+    borderWidth: 1,
+    borderColor: '#FFCC80',
+    borderRadius: 50,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  appTitle: {
-    color: C.text,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  streakText: { fontSize: 14, fontWeight: '700' },
+  streakChipEmpty: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 50,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  headerLinks: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  streakTextEmpty: { color: C.textMuted, fontSize: 13, fontWeight: '500' },
+
+  navRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   navPill: {
     backgroundColor: C.surface,
     borderWidth: 1,
@@ -209,21 +253,15 @@ const styles = StyleSheet.create({
     padding: 28,
     gap: 16,
     justifyContent: 'center',
-    maxHeight: 300,
-    marginBottom: 24,
+    maxHeight: 280,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 12,
     elevation: 3,
   },
-  content: {
-    color: C.text,
-    fontSize: 22,
-    lineHeight: 34,
-    fontWeight: '500',
-    letterSpacing: 0.1,
-  },
+  content: { color: C.text, fontSize: 22, lineHeight: 34, fontWeight: '500', letterSpacing: 0.1 },
   emptyInner: { gap: 6, alignItems: 'center' },
   emptyTitle: { color: C.textMuted, fontSize: 16, fontWeight: '600' },
   emptySubtitle: { color: C.textDim, fontSize: 14 },
@@ -256,10 +294,5 @@ const styles = StyleSheet.create({
   },
   generateText: { color: C.textMuted, fontSize: 15, fontWeight: '500' },
   btnDisabled: { opacity: 0.4 },
-  rateLimitMsg: {
-    color: C.textDim,
-    fontSize: 13,
-    textAlign: 'center',
-    paddingBottom: 8,
-  },
+  rateLimitMsg: { color: C.textDim, fontSize: 13, textAlign: 'center', paddingBottom: 8 },
 });
