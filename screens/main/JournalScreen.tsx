@@ -221,7 +221,7 @@ export function JournalScreen({ navigation }: ScreenProps<'Journal'>) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   kav: { flex: 1 },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 56, paddingBottom: 48, gap: 20 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 56, paddingBottom: 80, gap: 20 },
 
   header: {
     flexDirection: 'row',

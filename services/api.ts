@@ -98,6 +98,24 @@ export type UserStats = {
   badges: Array<{ id: string; label: string; desc: string }>;
 };
 
+export type Plan = {
+  id: string;
+  user_id: string;
+  type: 'day' | 'week' | 'month';
+  date: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DailySummary = {
+  id: string;
+  user_id: string;
+  date: string;
+  summary: string;
+  created_at: string;
+};
+
 export type WeeklySummaryResponse = {
   data: { id: string; user_id: string; summary: string; created_at: string } | null;
   message?: string;
@@ -188,6 +206,31 @@ export const api = {
     request<{ follow_up: string }>('/api/generate-follow-up', {
       method: 'POST',
       body: JSON.stringify({ user_id: userId, notification_id: notificationId }),
+    }),
+
+  // Planning
+  getPlan: (userId: string, type: 'day' | 'week' | 'month', date?: string) =>
+    request<Plan | null>(`/api/plan?user_id=${userId}&type=${type}${date ? `&date=${date}` : ''}`),
+
+  savePlan: (userId: string, type: 'day' | 'week' | 'month', content: string, date?: string) =>
+    request<Plan>('/api/plan', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, type, content, ...(date ? { date } : {}) }),
+    }),
+
+  // Daily summary
+  getDailySummary: (userId: string) =>
+    request<DailySummary | null>(`/api/daily-summary?user_id=${userId}`),
+
+  // Extract intentions from a response
+  extractActions: (userId: string, notificationId?: string, responseText?: string) =>
+    request<{ actions: string[] }>('/api/extract-actions', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        ...(notificationId ? { notification_id: notificationId } : {}),
+        ...(responseText ? { response_text: responseText } : {}),
+      }),
     }),
 
   getWeeklySummary: async (userId: string): Promise<WeeklySummaryResponse> => {

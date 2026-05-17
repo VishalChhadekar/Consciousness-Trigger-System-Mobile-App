@@ -18,6 +18,7 @@ import { Storage } from '../../services/storage';
 import type { ScreenProps } from '../../navigation/types';
 
 type Phase = 'writing' | 'submitting' | 'submitted' | 'followup-loading' | 'followup-done';
+type ActionsPhase = 'idle' | 'loading' | 'done' | 'error';
 
 export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
   const { notificationId, content, notificationType } = route.params;
@@ -27,6 +28,8 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
   const [phase, setPhase] = useState<Phase>('writing');
   const [toast, setToast] = useState('');
   const [userId, setUserId] = useState('');
+  const [actionsPhase, setActionsPhase] = useState<ActionsPhase>('idle');
+  const [extractedActions, setExtractedActions] = useState<string[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -56,7 +59,6 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
       scrollRef.current?.scrollTo({ y: 0, animated: true });
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
-        // notification not found — still show submitted state
         setSubmittedText(text);
         setPhase('submitted');
       } else {
@@ -78,6 +80,19 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
       if (e instanceof ApiError && e.status === 503) {
         showToast('Follow-up unavailable right now.');
       }
+    }
+  }
+
+  async function handleExtractActions() {
+    if (!userId) return;
+    setActionsPhase('loading');
+    try {
+      const res = await api.extractActions(userId, notificationId || undefined);
+      setExtractedActions(res.actions);
+      setActionsPhase('done');
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch {
+      setActionsPhase('error');
     }
   }
 
@@ -168,6 +183,45 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
             </View>
           ) : null}
 
+          {/* Extract intentions — shown after submit, below follow-up content */}
+          {isDone && phase !== 'followup-loading' ? (
+            <View style={styles.intentionsSection}>
+              {actionsPhase === 'idle' || actionsPhase === 'error' ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.intentionsBtn}
+                    onPress={handleExtractActions}
+                  >
+                    <Text style={styles.intentionsBtnText}>◎  Extract intentions</Text>
+                  </TouchableOpacity>
+                  {actionsPhase === 'error' ? (
+                    <Text style={styles.intentionsError}>Could not extract intentions. Try again.</Text>
+                  ) : null}
+                </>
+              ) : actionsPhase === 'loading' ? (
+                <View style={styles.intentionsLoading}>
+                  <ActivityIndicator size="small" color={C.primary} />
+                  <Text style={styles.intentionsLoadingText}>Extracting from your response…</Text>
+                </View>
+              ) : extractedActions.length === 0 ? (
+                <View style={styles.intentionsResult}>
+                  <Text style={styles.intentionsLabel}>From your response</Text>
+                  <Text style={styles.intentionsEmpty}>No specific intentions found in your response.</Text>
+                </View>
+              ) : (
+                <View style={styles.intentionsResult}>
+                  <Text style={styles.intentionsLabel}>From your response</Text>
+                  {extractedActions.map((action, i) => (
+                    <View key={i} style={styles.intentionRow}>
+                      <Text style={styles.intentionBullet}>•</Text>
+                      <Text style={styles.intentionText}>{action}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ) : null}
+
           {/* Toast */}
           {toast ? (
             <View style={styles.toast}>
@@ -176,7 +230,7 @@ export function ResponseScreen({ navigation, route }: ScreenProps<'Response'>) {
           ) : null}
         </ScrollView>
 
-        {/* Pinned footer — Submit while writing, Done while in submitted flow */}
+        {/* Pinned footer */}
         {isWriting || isSubmitting ? (
           <View style={styles.footer}>
             <TouchableOpacity
@@ -302,6 +356,39 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   insightText: { color: C.text, fontSize: 16, lineHeight: 26, fontStyle: 'italic' },
+
+  intentionsSection: { gap: 10 },
+  intentionsBtn: {
+    backgroundColor: C.bg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 50,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  intentionsBtnText: { color: C.textMuted, fontSize: 14, fontWeight: '600', letterSpacing: 0.2 },
+  intentionsLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  intentionsLoadingText: { color: C.textMuted, fontSize: 13 },
+  intentionsError: { color: C.danger, fontSize: 12, textAlign: 'center' },
+  intentionsResult: {
+    backgroundColor: C.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 18,
+    gap: 10,
+  },
+  intentionsLabel: {
+    color: C.textDim,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  intentionsEmpty: { color: C.textDim, fontSize: 14, fontStyle: 'italic' },
+  intentionRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  intentionBullet: { color: C.primary, fontSize: 16, lineHeight: 24, fontWeight: '700' },
+  intentionText: { flex: 1, color: C.text, fontSize: 15, lineHeight: 24 },
 
   toast: {
     backgroundColor: C.text,

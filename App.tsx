@@ -27,6 +27,7 @@ import { WeeklySummaryScreen } from './screens/main/WeeklySummaryScreen';
 import { NotificationHistoryScreen } from './screens/main/NotificationHistoryScreen';
 import { JournalScreen } from './screens/main/JournalScreen';
 import { StatsScreen } from './screens/main/StatsScreen';
+import { PlanningScreen } from './screens/main/PlanningScreen';
 
 import type { RootStackParamList } from './navigation/types';
 
@@ -118,6 +119,7 @@ export default function App() {
           <Stack.Screen name="NotificationHistory" component={NotificationHistoryScreen} />
           <Stack.Screen name="Journal" component={JournalScreen} />
           <Stack.Screen name="Stats" component={StatsScreen} />
+          <Stack.Screen name="Planning" component={PlanningScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

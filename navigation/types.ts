@@ -14,6 +14,7 @@ export type RootStackParamList = {
   NotificationHistory: undefined;
   Journal: undefined;
   Stats: undefined;
+  Planning: undefined;
 };
 
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<

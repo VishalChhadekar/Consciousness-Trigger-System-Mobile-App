@@ -5,6 +5,7 @@ export const DOMAIN_COLORS: Record<string, string> = {
   creative: '#7C3AED',
   mental: '#0891B2',
   life: '#D97706',
+  family: '#DB2777',
 };
 
 export const C = {
